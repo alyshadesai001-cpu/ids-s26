@@ -188,6 +188,9 @@ Markdown.
     datasets.
 + Patel, Vrajkumar
 + Sawyer, Riley
+    - Learn how to process and interpret real data using Python.
+    - Work in a collaborative setting using GitHub.
+    - Gain experience using Quarto and GitHub.
 + Sudarsanam, Shreya
     - Improve my understanding of how to choose which programming 
     language to use (i.e. R, Python, and SQL), and how to evaluate the 
