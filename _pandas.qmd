@@ -3,7 +3,6 @@
 
 This presentation is prepared by Jinha. 
 
-
 ### What is Pandas?
 
 - Pandas is a Python library for data manipulation and analysis.
@@ -24,6 +23,7 @@ This presentation is prepared by Jinha.
 - It is more efficient and scalable than spreadsheet software.
 - It integrates smoothly with other Python libraries.
 - It supports reproducible and automated workflows.
+
 
 ### Core Concepts
 
