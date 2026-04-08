@@ -13,9 +13,6 @@ include-in-header:
 
 {{< include _markov.qmd >}}
 
-## Natural Language Processing
-
-{{< include _natural_language_processing.qmd >}}
 
 ## LLM Agents
 
@@ -24,3 +21,5 @@ include-in-header:
 ## Animation
 
 {{< include _animation.qmd >}}
+
+## Natural Language Processing
