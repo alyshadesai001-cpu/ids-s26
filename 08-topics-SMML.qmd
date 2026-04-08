@@ -30,4 +30,3 @@
 
 ## Neural Networks in Sports Analytics
 
-{{< include _NeuralNetworks.qmd >}}
