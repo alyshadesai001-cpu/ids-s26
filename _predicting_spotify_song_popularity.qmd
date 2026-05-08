@@ -1,0 +1,253 @@
+---
+title: "Predicting Spotify Song Popularity Using Audio Features"
+author: "Alysha Desai"
+format:
+  html:
+    toc: true
+    code-fold: false
+    embed-resources: true
+execute:
+  echo: true
+---
+
+# Introduction
+
+## Research Question
+
+Which audio features are most strongly associated with Spotify song popularity, and can those features be used to predict popularity?
+
+# Data
+
+## Dataset - Spotify Tracks Dataset (Kaggle)
+
+This project uses a Spotify tracks dataset that includes song popularity and audio features such as danceability, energy, loudness, acousticness, and tempo.
+
+```{python}
+import pandas as pd
+
+df = pd.read_csv("data/raw/dataset.csv")
+
+if "Unnamed: 0" in df.columns:
+    df = df.drop(columns=["Unnamed: 0"])
+
+df = df.dropna()
+
+df.head()
+```
+
+
+```{python}
+df.shape
+```
+
+
+```{python}
+df.columns
+```
+
+
+```{python}
+df.isnull().sum()
+```
+
+
+### Summary Stats
+
+```{python}
+df.describe()
+```
+
+# Analysis
+
+## Exploratory Data Analysis
+
+```{python}
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(10, 6))
+plt.hist(df["popularity"], bins=20, color="pink")
+plt.xlabel("Popularity")
+plt.ylabel("Count")
+plt.title("Distribution of Spotify Song Popularity")
+plt.show()
+```
+
+- Spotify song popularity is not evenly distributed, with most songs falling in the low to middle range.
+- Only a smaller share of tracks reach very high popularity, so major hits are less common.
+- This suggests that popularity may depend on more than just audio features alone.
+
+```{python}
+plt.figure(figsize=(10, 6))
+plt.scatter(df["danceability"], df["popularity"], alpha=0.08, s=10, color="navy")
+plt.xlabel("Danceability")
+plt.ylabel("Popularity")
+plt.title("Danceability vs Spotify Song Popularity")
+plt.show()
+```
+
+- The scatterplot does not show a strong direct relationship between danceability and popularity.
+- Songs with both low and high popularity appear across many different danceability levels.
+- This suggests that danceability alone is not enough to explain popularity, and multiple features likely matter together.
+
+
+```{python}
+numeric_df = df.select_dtypes(include=["number"])
+
+plt.figure(figsize=(12, 8))
+corr = numeric_df.corr()
+plt.imshow(corr, cmap="Purples", aspect="auto")
+plt.colorbar()
+plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
+plt.yticks(range(len(corr.columns)), corr.columns)
+plt.title("Correlation Heatmap of Numeric Features")
+plt.show()
+```
+
+- Some audio features are related to each other, such as energy and loudness, while others move in opposite directions.
+- Popularity does not show a strong correlation with any single feature on its own.
+- This suggests that predicting popularity works better by combining multiple features in a model.
+
+
+```{python}
+genre_popularity = df.groupby("track_genre")["popularity"].mean().sort_values(ascending=False).head(10)
+
+plt.figure(figsize=(9, 4.5))
+genre_popularity.plot(kind="bar", color="navy")
+plt.xlabel("Genre")
+plt.ylabel("Average Popularity")
+plt.title("Top 10 Genres by Average Popularity")
+plt.xticks(rotation=45, ha="right")
+plt.show()
+```
+
+- Some genres, such as pop-film and k-pop, have higher average popularity than others in the dataset.
+- The differences across the top genres are noticeable but not extremely large.
+- This suggests that genre matters, but popularity is still likely influenced by multiple factors rather than genre alone.
+
+# Modeling
+
+## Model Results
+
+```{python}
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
+features = [
+    "danceability", "energy", "loudness", "speechiness",
+    "acousticness", "instrumentalness", "liveness",
+    "valence", "tempo", "duration_ms"
+]
+
+X = df[features]
+y = df["popularity"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+lr_model = LinearRegression()
+lr_model.fit(X_train, y_train)
+
+y_pred = lr_model.predict(X_test)
+
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print("Linear Regression MSE:", mse)
+print("Linear Regression R-squared:", r2)
+```
+
+- The linear regression model performed poorly, with an R-squared of about 0.02.
+- This means the selected audio features explain very little of the variation in song popularity.
+- Popularity likely depends on more complex patterns or outside factors beyond a simple linear relationship.
+
+```{python}
+from sklearn.ensemble import RandomForestRegressor
+
+rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+
+rf_pred = rf_model.predict(X_test)
+
+rf_mse = mean_squared_error(y_test, rf_pred)
+rf_r2 = r2_score(y_test, rf_pred)
+
+print("Random Forest MSE:", rf_mse)
+print("Random Forest R-squared:", rf_r2)
+```
+
+- The Random Forest model performed much better than the linear regression model.
+- With an R-squared of about 0.55, it explains a much larger share of the variation in popularity.
+- This suggests that audio features contain useful predictive information, especially when modeled with a more flexible nonlinear approach.
+
+
+```{python}
+model_results = pd.DataFrame({
+    "Model": ["Linear Regression", "Random Forest"],
+    "MSE": [mse, rf_mse],
+    "R-squared": [r2, rf_r2]
+})
+
+model_results
+```
+
+- The Random Forest model clearly outperformed the linear regression model.
+- It had a lower mean squared error and a higher R-squared value, so it predicted popularity more accurately.
+- This suggests that popularity depends on nonlinear relationships that a simple linear model could not capture well.
+
+
+```{python}
+feature_importance = pd.DataFrame({
+    "Feature": features,
+    "Importance": rf_model.feature_importances_
+}).sort_values(by="Importance", ascending=False)
+
+feature_importance
+```
+
+- No single audio feature dominates the model, although some contribute more than others.
+- Acousticness, duration, danceability, tempo, and valence appear to be among the most important predictors.
+- This suggests that popularity is shaped by a mix of musical qualities rather than one standalone feature.
+
+
+```{python}
+plt.figure(figsize=(9, 5))
+plt.bar(feature_importance["Feature"], feature_importance["Importance"], color="navy")
+plt.xlabel("Feature")
+plt.ylabel("Importance")
+plt.title("Random Forest Feature Importance")
+plt.xticks(rotation=45, ha="right")
+plt.show()
+```
+
+- The Random Forest model relies on several audio features rather than one dominant predictor.
+- Acousticness, duration, danceability, and tempo appear among the most important features.
+- This suggests that song popularity comes from a broader combination of musical characteristics rather than one single factor.
+
+
+# Conclusion
+
+## Key Findings
+
+- Audio features showed weak simple relationships with popularity on their own.
+- Linear regression performed poorly, but Random Forest performed much better.
+- Popularity appears to depend on a combination of musical traits rather than one single feature.
+
+## Main Takeaway
+
+Spotify song popularity can be predicted somewhat from audio features, but the relationships are more nonlinear and complex than a basic linear model can capture.
+
+## Limitation / Future Work
+
+- Popularity is also affected by outside factors like artist fame, promotion, timing, and listener behavior.
+- Future work could include more contextual variables to improve prediction.
+
+# Further Readings
+
+- [Spotify Tracks Dataset — Kaggle](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset)
+- [Breiman, L. (2001). *Random Forests*](https://statistics.berkeley.edu/sites/default/files/tech-reports/772.pdf)
+- [Middlebrook, K., & Sheik, K. (2019). *Song Hit Prediction: Predicting Billboard Hits Using Spotify Data*](https://arxiv.org/pdf/1908.08609.pdf)
+
+
+# Thank you!
